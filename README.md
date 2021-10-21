@@ -11,3 +11,4 @@ Controls:
 - Enter to reset all balls' speeds
 - Backspace to remove the newest ball
 - Delete to remove all balls
+- s to turn sound on or off
