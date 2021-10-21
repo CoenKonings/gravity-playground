@@ -1,7 +1,7 @@
 /**
  * Author:            Coen Konings
  * Date:              30-09-2021
- * 
+ *
  * Most recent edit:  19-10-2021
  * By:                Coen Konings
  */
@@ -26,7 +26,7 @@ class Vector2D {
 
   /**
    * Calculate the length of this vector.
-   * 
+   *
    * @returns The length of the vector.
    */
   length() {
@@ -35,7 +35,7 @@ class Vector2D {
 
   /**
    * Find the normalized vector in the same direction as this vector.
-   * 
+   *
    * @returns A normalized vector.
    */
   normalized() {
@@ -47,7 +47,7 @@ class Vector2D {
 
   /**
    * Calculate the dot product between this vector and another vector.
-   * 
+   *
    * @param v The other vector.
    * @returns The dot product between this and v.
    */
@@ -57,7 +57,7 @@ class Vector2D {
 
   /**
    * Multiply a vector by a scalar.
-   * 
+   *
    * @param n The number by which to multiply this vector.
    * @returns This vector multiplied by the given scalar.
    */
@@ -82,7 +82,7 @@ class Ball {
     this.note = note;  // The note the ball should play when it hits something.
     /* Array used to track with which balls this ball has already collided during the current simulation step. */
     this.collided = [];
-    this.fg = new Vector2D(0, 0);
+    this.fg = new Vector2D(0, 0);  // Used to track current gravitational pull on this ball.
     /* Edit vX and vY so that the length of vector [vX, vY] is equal to this.speed. */
     this.resetSpeed();
     this.playSound();
@@ -90,41 +90,40 @@ class Ball {
 
   /**
    * Calculate if ball a and ball b are touching.
-   * 
+   *
    * @param ball  The ball to check for collisions with.
    * @returns:    True if the balls are touching, false otherwise.
    */
   collision(ball) {
     let distanceVector = new Vector2D(this.pos.x - ball.pos.x, this.pos.y - ball.pos.y);
-  
     return distanceVector.length() <= this.radius + ball.radius;
   }
 
   /**
    * Change direction of movement of this ball and the given ball, based on their angle of collision.
-   * 
+   *
    * @param ball  The ball to collide this with.
    */
   collide(ball) {
     this.staticCollide(ball);
-  
+
     let distanceVector = new Vector2D(ball.pos.x - this.pos.x, ball.pos.y - this.pos.y);
     let normal = distanceVector.normalized();
     let tangent = new Vector2D(-normal.y, normal.x);
-  
+
     let scalarNormalA = normal.dot(this.velocity);
     let scalarNormalB = normal.dot(ball.velocity);
     let scalarTangentA = tangent.dot(this.velocity);
     let scalarTangentB = tangent.dot(ball.velocity);
-  
+
     let scalarNormalANew = (scalarNormalA * (this.mass - ball.mass) + 2 * ball.mass * scalarNormalB) / (this.mass + ball.mass);
     let scalarNormalBNew = (scalarNormalB * (ball.mass - this.mass) + 2 * this.mass * scalarNormalA) / (this.mass + ball.mass);
-  
+
     this.velocity.x = normal.x * scalarNormalANew + tangent.x * scalarTangentA;
     this.velocity.y = normal.y * scalarNormalANew + tangent.y * scalarTangentA;
     ball.velocity.x = normal.x * scalarNormalBNew + tangent.x * scalarTangentB;
     ball.velocity.y = normal.y * scalarNormalBNew + tangent.y * scalarTangentB;
-  
+
     this.swapColors();
     this.playSound();
     ball.swapColors();
@@ -134,16 +133,16 @@ class Ball {
   /**
    * Prevent balls from getting inside each other by increasing the distance
    * between their centers to the sum of their radiuses.
-   * 
+   *
    * @param ball The ball this collides with.
    */
   staticCollide(ball) {
     let distanceVector = new Vector2D(this.pos.x - ball.pos.x, this.pos.y - ball.pos.y);
-  
+
     let theta = Math.atan2(distanceVector.y, distanceVector.x);
     let dist = distanceVector.length();
     let overlap = this.radius + ball.radius - dist;
-  
+
     this.pos.x += overlap / 1.99 * Math.cos(theta);
     this.pos.y += overlap / 1.99 * Math.sin(theta);
     ball.pos.x -= overlap / 1.99 * Math.cos(theta);
@@ -151,16 +150,16 @@ class Ball {
   }
 
   /**
-   * Edit the ball's velocity so the size of the velocity vector equals the speed:
-   * vecLen([vX, vY]) == speed.
+   * Edit the ball's velocity so the size of the velocity vector equals the speed.
    */
   resetSpeed() {
     this.velocity = this.velocity.normalized().multiply(this.speed);
   }
 
   /**
-   * For each other ball, calculate its gravitational force on this ball.
-   * Use the total gravitational force to accellerate this ball.
+   * For each other ball, calculate the gravitational pull of a ball on this.
+   *
+   * @param ball The ball of which to calculate the gravitational force.
    */
   gravitate(ball) {
     let distanceVector = new Vector2D(this.pos.x - ball.pos.x, this.pos.y - ball.pos.y);
@@ -171,25 +170,24 @@ class Ball {
     this.fg.x -= gForceStrength * cos(theta);
     this.fg.y -= gForceStrength * sin(theta);
   }
-  
+
   /**
    * Perform a simulation step for this ball, changing its position,
    * velocity and color as needed.
    */
   step() {
-    
     /**
      * Iterate through all balls for collision detection and
      * gravitational pull (if turned on)
      */
     for (let i = 0; i < balls.length; i++) {
       const ball = balls[i];
-      
+
       // Prevent balls from colliding with themselves.
       if (ball.id == this.id) {
         continue;
       }
-      
+
       // Detect collision
       if (this.collision(ball) && !this.collided.includes(ball.id)) {
         this.collide(ball);
@@ -204,12 +202,11 @@ class Ball {
       }
     }
 
-    
     // Move the ball by its velocity.
     let prevPos = new Vector2D(this.pos.x, this.pos.y);
     this.pos.x += this.velocity.x;
     this.pos.y += this.velocity.y;
-    
+
     // If gravity is turned on, accellerate the ball in the right direction.
     if (gravity) {
       if (gravityMode == "1") {
@@ -218,16 +215,17 @@ class Ball {
           this.velocity.y += gravityStrength;
           this.velocity.y -= (this.velocity.y * drag);
         }
-        
+
         this.velocity.x -= (this.velocity.x * drag);
-      } else if (gravity && gravityMode == "2") {
+
+      } else if (gravityMode == "2") {
         this.velocity.x += this.fg.x / this.mass;
         this.velocity.y += this.fg.y / this.mass;
         this.velocity.y -= (this.velocity.y * drag * dragFactor);
         this.velocity.x -= (this.velocity.x * drag * dragFactor);
       }
     }
-    
+
     // Change direction of movement if the ball hits the edge of the canvas.
     if (this.pos.x - this.radius < 0 && this.velocity.x < 0 || this.pos.x + this.radius > width && this.velocity.x > 0) {
       this.velocity.x *= -1;
@@ -252,7 +250,7 @@ class Ball {
     if (this.pos.x >= width/2 && prevPos.x < width/2 || this.pos.x <= width/2 && prevPos.x > width/2) {
       this.playSound();
     }
-    
+
     if (this.pos.y >= height/2 && prevPos.y < height/2 || this.pos.y <= height/2 && prevPos.y > height/2) {
       this.playSound();
     }
@@ -279,16 +277,16 @@ class Ball {
     this.strokeColor = this.fillColor;
     this.fillColor = temp;
   }
-  
+
   /**
    * Play a sound.
-   * 
+   *
    * NOTE:
    * The sound module crashes the simulation if too many sounds are played at once.
    * Remove for stability, or if not using the HKU CSD framework.
    */
   playSound() {
-    // makeNote(this.note, 1, 5.0);
+    makeNote(this.note, 1, 5.0);
   }
 }
 
@@ -319,7 +317,7 @@ function draw() {
   let g = "Gravity: ";
   g += gravity ? "on" : "off";
   g += "\nGravity mode: ";
-  
+
   if (gravityMode == "1") {
     g += "planet";
   } else if (gravityMode == "2") {
