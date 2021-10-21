@@ -54,53 +54,16 @@ class Vector2D {
   dot(v) {
     return this.x * v.x + this.y * v.y;
   }
-}
 
-/**
- * Scale a 2D vector so that its length is 1.
- * 
- * @param v:  The vector to normalize.
- * @returns:  The normalized vector.
- */
-function normalize(v) {
-  lenV = vecLen(v);
-  n0 = v[0] / lenV;
-  n1 = v[1] / lenV;
-  n = [n0, n1];
-  return n;
-}
-
-/**
- * Calculate dot product of two vectors.
- * 
- * @param a:  One of the vectors.
- * @param b:  The other vector.
- * @returns:  The dot product of a and b.
- */
-function dotProd(a, b) {
-  let output = 0;
-
-  for (let i = 0; i < a.length; i++) {
-    output += a[i] * b[i];
+  /**
+   * Multiply a vector by a scalar.
+   * 
+   * @param n The number by which to multiply this vector.
+   * @returns This vector multiplied by the given scalar.
+   */
+  multiply(n) {
+    return new Vector2D(this.x * n, this.y * n);
   }
-
-  return output;
-}
-
-/**
- * Calculate the length of a vector.
- * 
- * @param v:  The vector of which the length will be calculated.
- * @returns:  The length of v.
- */
-function vecLen(v) {
-  let output = 0;
-  
-  for (let i = 0; i < v.length; i++) {
-    output += v[i] ** 2;
-  }
-
-  return Math.sqrt(output);
 }
 
 /**
@@ -111,14 +74,9 @@ function vecLen(v) {
  * @returns:  True if the balls are touching, false otherwise.
  */
 function collision(a, b) {
-  let dx = a.xPos - b.xPos;
-  let dy = a.yPos - b.yPos;
+  let distanceVector = new Vector2D(a.pos.x - b.pos.x, a.pos.y - b.pos.y);
 
-  if (vecLen([dx, dy]) <= a.radius + b.radius) {
-    return true;
-  }
-
-  return false;
+  return distanceVector.length() <= a.radius + b.radius;
 }
 
 /**
@@ -129,17 +87,16 @@ function collision(a, b) {
  * @param b:    Ball b.
  */
 function staticCollide(a, b) {
-  let dX = a.xPos - b.xPos;
-  let dY = a.yPos - b.yPos;
+  let distanceVector = new Vector2D(a.pos.x - b.pos.x, a.pos.y - b.pos.y);
 
-  let theta = Math.atan2(dY, dX);
-  let dist = Math.sqrt(dX**2 + dY**2);
+  let theta = Math.atan2(distanceVector.y, distanceVector.x);
+  let dist = distanceVector.length();
   let overlap = a.radius + b.radius - dist;
 
-  a.xPos += overlap / 1.99 * Math.cos(theta);
-  a.yPos += overlap / 1.99 * Math.sin(theta);
-  b.xPos -= overlap / 1.99 * Math.cos(theta);
-  b.yPos -= overlap / 1.99 * Math.sin(theta);
+  a.pos.x += overlap / 1.99 * Math.cos(theta);
+  a.pos.y += overlap / 1.99 * Math.sin(theta);
+  b.pos.x -= overlap / 1.99 * Math.cos(theta);
+  b.pos.y -= overlap / 1.99 * Math.sin(theta);
 }
 
 /**
@@ -152,25 +109,22 @@ function staticCollide(a, b) {
 function collide(a, b) {
   staticCollide(a, b);
 
-  let dx = b.xPos - a.xPos;
-  let dy = b.yPos - a.yPos;
-  let n = normalize([dx, dy]);
-  let t = [-n[1], n[0]];
-  let vA = [a.vX, a.vY];
-  let vB = [b.vX, b.vY];
+  let distanceVector = new Vector2D(b.pos.x - a.pos.x, b.pos.y - a.pos.y);
+  let normal = distanceVector.normalized();
+  let tangent = new Vector2D(-normal.y, normal.x);
 
-  let nA = dotProd(n, vA);
-  let nB = dotProd(n, vB);
-  let tA = dotProd(t, vA);
-  let tB = dotProd(t, vB);
+  let scalarNormalA = normal.dot(a.velocity);
+  let scalarNormalB = normal.dot(b.velocity);
+  let scalarTangentA = tangent.dot(a.velocity);
+  let scalarTangentB = tangent.dot(b.velocity);
 
-  let nANew = (nA * (a.mass - b.mass) + 2 * b.mass * nB) / (a.mass + b.mass);
-  let nBNew = (nB * (b.mass - a.mass) + 2 * a.mass * nA) / (a.mass + b.mass);
+  let scalarNormalANew = (scalarNormalA * (a.mass - b.mass) + 2 * b.mass * scalarNormalB) / (a.mass + b.mass);
+  let scalarNormalBNew = (scalarNormalB * (b.mass - a.mass) + 2 * a.mass * scalarNormalA) / (a.mass + b.mass);
 
-  a.vX = n[0] * nANew + t[0] * tA;
-  a.vY = n[1] * nANew + t[1] * tA;
-  b.vX = n[0] * nBNew + t[0] * tB;
-  b.vY = n[1] * nBNew + t[1] * tB;
+  a.velocity.x = normal.x * scalarNormalANew + tangent.x * scalarTangentA;
+  a.velocity.y = normal.y * scalarNormalANew + tangent.y * scalarTangentA;
+  b.velocity.x = normal.x * scalarNormalBNew + tangent.x * scalarTangentB;
+  b.velocity.y = normal.y * scalarNormalBNew + tangent.y * scalarTangentB;
 
   a.swapColors();
   a.playSound();
@@ -184,10 +138,8 @@ function collide(a, b) {
 class Ball {
   constructor(id, xPos, yPos, vX, vY, speed, radius, strokeColor, fillColor, note) {
     this.id = id;  // ID to keep track of which ball is which.
-    this.xPos = xPos;
-    this.yPos = yPos;
-    this.vX = vX;  // The ball's horizontal velocity.
-    this.vY = vY;  // The ball's vertical velocity.
+    this.pos = new Vector2D(xPos, yPos);
+    this.velocity = new Vector2D(vX, vY);
     this.speed = speed;  // The initial speed of the ball.
     this.radius = radius;
     this.mass = 4 / 3 * Math.PI * this.radius ** 3 * ballDensity / 150000 + 1;
@@ -206,9 +158,7 @@ class Ball {
    * vecLen([vX, vY]) == speed.
    */
   resetSpeed() {
-    let newSpeed = normalize([this.vX, this.vY]);
-    this.vX = newSpeed[0] * this.speed;
-    this.vY = newSpeed[1] * this.speed;
+    this.velocity = this.velocity.normalized().multiply(this.speed);
   }
 
   /**
@@ -217,8 +167,7 @@ class Ball {
    */
   gravitate() {
     // Gravitational force in both directions.
-    let fgx = 0;
-    let fgy = 0;
+    let fg = new Vector2D(0, 0);
 
     for (let i = 0; i < balls.length; i++) {
       const ball = balls[i];
@@ -228,25 +177,18 @@ class Ball {
         continue;
       }
 
-      let dx = this.xPos - ball.xPos;
-      let dy = this.yPos - ball.yPos;
-      let dist = vecLen([dx, dy]);
-      let fg = g / dist ** 2;  // Total gravitational force.
-      let theta = atan2(dy, dx);  // Angle of horizontal line and line between balls.
+      let distanceVector = new Vector2D(this.pos.x - ball.pos.x, this.pos.y - ball.pos.y);
+      let distance = distanceVector.length();
+      let gForceStrength = g / distance ** 2;  // Total gravitational force.
+      let theta = atan2(distanceVector.y, distanceVector.x);  // Angle of horizontal line and line between balls.
 
-      fgx -= fg * cos(theta);
-      fgy -= fg * sin(theta);
-
-      if (fgx > 0.1 || fgy > 0.1) {
-        console.log("--------------");
-        console.log(fgx, fgy);
-        console.log(dx, dy);
-      }
+      fg.x -= gForceStrength * cos(theta);
+      fg.y -= gForceStrength * sin(theta);
     }
 
     // F = m * a
-    this.vX += fgx / this.mass;
-    this.vY += fgy / this.mass;
+    this.velocity.x += fg.x / this.mass;
+    this.velocity.y += fg.y / this.mass;
   }
   
   /**
@@ -275,36 +217,35 @@ class Ball {
     }
     
     // Move the ball by its velocity.
-    let prevXPos = this.xPos;
-    let prevYPos = this.yPos;
-    this.xPos += this.vX;
-    this.yPos += this.vY;
+    let prevPos = new Vector2D(this.pos.x, this.pos.y);
+    this.pos.x += this.velocity.x;
+    this.pos.y += this.velocity.y;
 
     // If gravity is turned on, accellerate the ball in the right direction.
     if (gravity) {
       if (gravityMode == "1") {
         // Add some drag to make the bouncing stop sometime.
-        if (this.yPos < height - this.radius - 2) {
-          this.vY += gravityStrength;
-          this.vY -= (this.vY * drag);
+        if (this.pos.y < height - this.radius - 2) {
+          this.velocity.y += gravityStrength;
+          this.velocity.y -= (this.velocity.y * drag);
         }
 
-        this.vX -= (this.vX * drag);
+        this.velocity.x -= (this.velocity.x * drag);
       } else if (gravityMode == "2") {
         this.gravitate();
-        this.vY -= (this.vY * drag * dragFactor);
-        this.vX -= (this.vX * drag * dragFactor);
+        this.velocity.y -= (this.velocity.y * drag * dragFactor);
+        this.velocity.x -= (this.velocity.x * drag * dragFactor);
       }
 
     }
     
     // Change direction of movement if the ball hits the edge of the canvas.
-    if (this.xPos - this.radius < 0 && this.vX < 0 || this.xPos + this.radius > width && this.vX > 0) {
-      this.vX *= -1;
+    if (this.pos.x - this.radius < 0 && this.velocity.x < 0 || this.pos.x + this.radius > width && this.velocity.x > 0) {
+      this.velocity.x *= -1;
       this.swapColors();
       this.playSound();
-    } else if (this.yPos - this.radius < 0 && this.vY < 0 || this.yPos + this.radius > height && this.vY > 0) {
-      this.vY *= -1;
+    } else if (this.pos.y - this.radius < 0 && this.velocity.y < 0 || this.pos.y + this.radius > height && this.velocity.y > 0) {
+      this.velocity.y *= -1;
       this.swapColors();
       this.playSound();
 
@@ -312,18 +253,18 @@ class Ball {
        * Prevent balls from indefinitely playing sounds, changing colors and bouncing
        * if gravity is turned on and they're "lying on the floor".
        */
-      if (gravity && this.vY <= 0 && this.vY > -2 && gravityMode == "1") {
-        this.vY = 0;
-        this.yPos = height - this.radius - 1;
+      if (gravity && this.velocity.y <= 0 && this.velocity.y > -2 && gravityMode == "1") {
+        this.velocity.y = 0;
+        this.pos.y = height - this.radius - 1;
       }
     }
 
     // Play a sound each time a ball crosses the horizontal or vertical center of the canvas.
-    if (this.xPos >= width/2 && prevXPos < width/2 || this.xPos <= width/2 && prevXPos > width/2) {
+    if (this.pos.x >= width/2 && prevPos.x < width/2 || this.pos.x <= width/2 && prevPos.x > width/2) {
       this.playSound();
     }
     
-    if (this.yPos >= height/2 && prevYPos < height/2 || this.yPos <= height/2 && prevYPos > height/2) {
+    if (this.pos.y >= height/2 && prevPos.y < height/2 || this.pos.y <= height/2 && prevPos.y > height/2) {
       this.playSound();
     }
 
@@ -336,7 +277,7 @@ class Ball {
   draw() {
     stroke(this.strokeColor);
     fill(this.fillColor);
-    circle(this.xPos, this.yPos, this.radius * 2);
+    circle(this.pos.x, this.pos.y, this.radius * 2);
   }
 
   /**
