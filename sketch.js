@@ -19,6 +19,7 @@ let dragFactor = 0.08;  // The factor by which to multiply the drag in gravity m
 let ballDensity = 3;
 let leaveTrails = false;
 let colorSwap = false;
+let soundOn = false;
 
 class Vector2D {
   constructor(x, y) {
@@ -290,7 +291,9 @@ class Ball {
    * Remove for stability, or if not using the HKU CSD framework.
    */
   playSound() {
-    makeNote(this.note, 1, 5.0);
+    if (soundOn) {
+      makeNote(this.note, 1, 5.0);
+    }
   }
 }
 
@@ -402,5 +405,7 @@ function keyPressed(event) {
     leaveTrails = !leaveTrails;
   } else if (event.key == "c") {
     colorSwap = !colorSwap;
+  } else if (event.key == "s") {
+    soundOn = !soundOn;
   }
 }
