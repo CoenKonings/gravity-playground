@@ -18,6 +18,44 @@ let drag = 0.025;  // Add some drag so the gravitational accelleration is not in
 let dragFactor = 0.08;  // The factor by which to multiply the drag in gravity mode 2 ("space")
 let ballDensity = 3;
 
+class Vector2D {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+  }
+
+  /**
+   * Calculate the length of this vector.
+   * 
+   * @returns The length of the vector.
+   */
+  length() {
+    return Math.sqrt(this.x ** 2 + this.y ** 2);
+  }
+
+  /**
+   * Find the normalized vector in the same direction as this vector.
+   * 
+   * @returns A normalized vector.
+   */
+  normalized() {
+    let n = new Vector2D(this.x, this.y);
+    n.x = n.x / this.length();
+    n.y = n.y / this.length();
+    return n;
+  }
+
+  /**
+   * Calculate the dot product between this vector and another vector.
+   * 
+   * @param v The other vector.
+   * @returns The dot product between this and v.
+   */
+  dot(v) {
+    return this.x * v.x + this.y * v.y;
+  }
+}
+
 /**
  * Scale a 2D vector so that its length is 1.
  * 
