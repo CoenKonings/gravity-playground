@@ -18,6 +18,7 @@ let drag = 0.025;  // Add some drag so the gravitational accelleration is not in
 let dragFactor = 0.08;  // The factor by which to multiply the drag in gravity mode 2 ("space")
 let ballDensity = 3;
 let leaveTrails = false;
+let colorSwap = false;
 
 class Vector2D {
   constructor(x, y) {
@@ -274,9 +275,11 @@ class Ball {
    * Swap the inner (fill) and outer (stroke) color of the ball.
    */
   swapColors() {
-    let temp = this.strokeColor;
-    this.strokeColor = this.fillColor;
-    this.fillColor = temp;
+    if (colorSwap) {
+      let temp = this.strokeColor;
+      this.strokeColor = this.fillColor;
+      this.fillColor = temp;
+    }
   }
 
   /**
@@ -397,5 +400,7 @@ function keyPressed(event) {
     gravityMode = event.key;
   } else if (event.key == "t") {
     leaveTrails = !leaveTrails;
+  } else if (event.key == "c") {
+    colorSwap = !colorSwap;
   }
 }

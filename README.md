@@ -2,4 +2,12 @@
 
 Requires P5 JS to work. Remove the `makenote()` calls when not using HKU's CSDOSC framework.
 
-Left mouse button creates a new ball. Spacebar turns gravity on or off. Enter resets the balls' speed to the initial value. Backspace removes the newest ball. Delete removes all balls. 1 and 2 select gravity modes.
+Controls:
+- Left mouse click to create a new ball at the cursor's location
+- Spacebar to turn on/off gravity
+- 1 and 2 to switch gravity modes
+- c to turn color swapping on or off
+- t to turn trails on or off
+- Enter to reset all balls' speeds
+- Backspace to remove the newest ball
+- Delete to remove all balls
