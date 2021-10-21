@@ -67,26 +67,6 @@ class Vector2D {
 }
 
 /**
- * Prevent balls from getting inside each other by increasing the distance
- * between their centers to the sum of their radiuses.
- * 
- * @param a:    Ball a.
- * @param b:    Ball b.
- */
-function staticCollide(a, b) {
-  let distanceVector = new Vector2D(a.pos.x - b.pos.x, a.pos.y - b.pos.y);
-
-  let theta = Math.atan2(distanceVector.y, distanceVector.x);
-  let dist = distanceVector.length();
-  let overlap = a.radius + b.radius - dist;
-
-  a.pos.x += overlap / 1.99 * Math.cos(theta);
-  a.pos.y += overlap / 1.99 * Math.sin(theta);
-  b.pos.x -= overlap / 1.99 * Math.cos(theta);
-  b.pos.y -= overlap / 1.99 * Math.sin(theta);
-}
-
-/**
  * A representation of a ball.
  */
 class Ball {
@@ -125,7 +105,7 @@ class Ball {
    * @param ball  The ball to collide this with.
    */
   collide(ball) {
-    staticCollide(this, ball);
+    this.staticCollide(ball);
   
     let distanceVector = new Vector2D(ball.pos.x - this.pos.x, ball.pos.y - this.pos.y);
     let normal = distanceVector.normalized();
@@ -148,6 +128,25 @@ class Ball {
     this.playSound();
     ball.swapColors();
     ball.playSound();
+  }
+
+  /**
+   * Prevent balls from getting inside each other by increasing the distance
+   * between their centers to the sum of their radiuses.
+   * 
+   * @param ball The ball this collides with.
+   */
+  staticCollide(ball) {
+    let distanceVector = new Vector2D(this.pos.x - ball.pos.x, this.pos.y - ball.pos.y);
+  
+    let theta = Math.atan2(distanceVector.y, distanceVector.x);
+    let dist = distanceVector.length();
+    let overlap = this.radius + ball.radius - dist;
+  
+    this.pos.x += overlap / 1.99 * Math.cos(theta);
+    this.pos.y += overlap / 1.99 * Math.sin(theta);
+    ball.pos.x -= overlap / 1.99 * Math.cos(theta);
+    ball.pos.y -= overlap / 1.99 * Math.sin(theta);
   }
 
   /**
