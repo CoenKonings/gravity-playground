@@ -87,39 +87,6 @@ function staticCollide(a, b) {
 }
 
 /**
- * Change direction of movement of two colliding balls, based
- * on velocity and angle of collision.
- * 
- * @param a:  Ball A.
- * @param b:  Ball B.
- */
-function collide(a, b) {
-  staticCollide(a, b);
-
-  let distanceVector = new Vector2D(b.pos.x - a.pos.x, b.pos.y - a.pos.y);
-  let normal = distanceVector.normalized();
-  let tangent = new Vector2D(-normal.y, normal.x);
-
-  let scalarNormalA = normal.dot(a.velocity);
-  let scalarNormalB = normal.dot(b.velocity);
-  let scalarTangentA = tangent.dot(a.velocity);
-  let scalarTangentB = tangent.dot(b.velocity);
-
-  let scalarNormalANew = (scalarNormalA * (a.mass - b.mass) + 2 * b.mass * scalarNormalB) / (a.mass + b.mass);
-  let scalarNormalBNew = (scalarNormalB * (b.mass - a.mass) + 2 * a.mass * scalarNormalA) / (a.mass + b.mass);
-
-  a.velocity.x = normal.x * scalarNormalANew + tangent.x * scalarTangentA;
-  a.velocity.y = normal.y * scalarNormalANew + tangent.y * scalarTangentA;
-  b.velocity.x = normal.x * scalarNormalBNew + tangent.x * scalarTangentB;
-  b.velocity.y = normal.y * scalarNormalBNew + tangent.y * scalarTangentB;
-
-  a.swapColors();
-  a.playSound();
-  b.swapColors();
-  b.playSound();
-}
-
-/**
  * A representation of a ball.
  */
 class Ball {
@@ -150,6 +117,37 @@ class Ball {
     let distanceVector = new Vector2D(this.pos.x - ball.pos.x, this.pos.y - ball.pos.y);
   
     return distanceVector.length() <= this.radius + ball.radius;
+  }
+
+  /**
+   * Change direction of movement of this ball and the given ball, based on their angle of collision.
+   * 
+   * @param ball  The ball to collide this with.
+   */
+  collide(ball) {
+    staticCollide(this, ball);
+  
+    let distanceVector = new Vector2D(ball.pos.x - this.pos.x, ball.pos.y - this.pos.y);
+    let normal = distanceVector.normalized();
+    let tangent = new Vector2D(-normal.y, normal.x);
+  
+    let scalarNormalA = normal.dot(this.velocity);
+    let scalarNormalB = normal.dot(ball.velocity);
+    let scalarTangentA = tangent.dot(this.velocity);
+    let scalarTangentB = tangent.dot(ball.velocity);
+  
+    let scalarNormalANew = (scalarNormalA * (this.mass - ball.mass) + 2 * ball.mass * scalarNormalB) / (this.mass + ball.mass);
+    let scalarNormalBNew = (scalarNormalB * (ball.mass - this.mass) + 2 * this.mass * scalarNormalA) / (this.mass + ball.mass);
+  
+    this.velocity.x = normal.x * scalarNormalANew + tangent.x * scalarTangentA;
+    this.velocity.y = normal.y * scalarNormalANew + tangent.y * scalarTangentA;
+    ball.velocity.x = normal.x * scalarNormalBNew + tangent.x * scalarTangentB;
+    ball.velocity.y = normal.y * scalarNormalBNew + tangent.y * scalarTangentB;
+  
+    this.swapColors();
+    this.playSound();
+    ball.swapColors();
+    ball.playSound();
   }
 
   /**
@@ -207,7 +205,7 @@ class Ball {
       
       // Detect collision
       if (this.collision(ball) && !this.collided.includes(ball.id)) {
-        collide(this, ball);
+        this.collide(ball);
 
         // Track which balls have already collided.
         this.collided.push(ball.id);
@@ -318,7 +316,7 @@ function setup() {
 function draw() {
   // Fill background, draw lines through horizontal and vertical center.
   strokeWeight(1);
-  // background(132, 0, 50, 180);
+  background(132, 0, 50, 180);
   stroke(0);
   fill(0);
   line(width/2, 0, width/2, height);
