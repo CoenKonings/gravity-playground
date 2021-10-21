@@ -67,19 +67,6 @@ class Vector2D {
 }
 
 /**
- * Calculate if ball a and ball b are touching.
- * 
- * @param a:  A ball.
- * @param b:  A second ball.
- * @returns:  True if the balls are touching, false otherwise.
- */
-function collision(a, b) {
-  let distanceVector = new Vector2D(a.pos.x - b.pos.x, a.pos.y - b.pos.y);
-
-  return distanceVector.length() <= a.radius + b.radius;
-}
-
-/**
  * Prevent balls from getting inside each other by increasing the distance
  * between their centers to the sum of their radiuses.
  * 
@@ -154,6 +141,18 @@ class Ball {
   }
 
   /**
+   * Calculate if ball a and ball b are touching.
+   * 
+   * @param ball  The ball to check for collisions with.
+   * @returns:    True if the balls are touching, false otherwise.
+   */
+  collision(ball) {
+    let distanceVector = new Vector2D(this.pos.x - ball.pos.x, this.pos.y - ball.pos.y);
+  
+    return distanceVector.length() <= this.radius + ball.radius;
+  }
+
+  /**
    * Edit the ball's velocity so the size of the velocity vector equals the speed:
    * vecLen([vX, vY]) == speed.
    */
@@ -207,7 +206,7 @@ class Ball {
       }
       
       // Detect collision
-      if (collision(this, ball) && !this.collided.includes(ball.id)) {
+      if (this.collision(ball) && !this.collided.includes(ball.id)) {
         collide(this, ball);
 
         // Track which balls have already collided.
