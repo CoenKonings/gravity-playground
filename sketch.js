@@ -13,7 +13,7 @@ let gravity = false;  // Boolean used to turn gravity on or off.
 let gravityStrength = 0.5;  // Accelleration by gravity in pixels / (refresh rate) ** 2
 let strokeSize = 5;  // Size of the balls' border.
 let gravityMode = "1";  // Are we on earth or in space?
-let g = 1000;  // The gravitational constant
+let g = 400;  // The gravitational constant
 let drag = 0.025;  // Add some drag so the gravitational accelleration is not infinite.
 let dragFactor = 0.08;  // The factor by which to multiply the drag in gravity mode 2 ("space")
 let ballDensity = 3;
@@ -164,7 +164,7 @@ class Ball {
   gravitate(ball) {
     let distanceVector = new Vector2D(this.pos.x - ball.pos.x, this.pos.y - ball.pos.y);
     let distance = distanceVector.length();
-    let gForceStrength = g / distance ** 2;  // Total gravitational force.
+    let gForceStrength = g * this.mass * ball.mass / distance ** 2;  // Total gravitational force.
     let theta = atan2(distanceVector.y, distanceVector.x);  // Angle of horizontal line and line between balls.
 
     this.fg.x -= gForceStrength * cos(theta);
@@ -303,17 +303,9 @@ function setup() {
 }
 
 /**
- * The main loop. Is called once every simulation step.
+ * Write gravity mode and status on the screen.
  */
-function draw() {
-  // Fill background, draw lines through horizontal and vertical center.
-  strokeWeight(1);
-  background(132, 0, 50, 180);
-  stroke(0);
-  fill(0);
-  line(width/2, 0, width/2, height);
-  line(0, height/2, width, height/2);
-  // Show current gravity mode in top left corner.
+function showGravityStatus() {
   let g = "Gravity: ";
   g += gravity ? "on" : "off";
   g += "\nGravity mode: ";
@@ -326,7 +318,20 @@ function draw() {
 
   textSize(20);
   text(g, 10, 30);
+}
 
+/**
+ * The main loop. Is called once every simulation step.
+ */
+function draw() {
+  // Fill background, draw lines through horizontal and vertical center.
+  strokeWeight(1);
+  // background(132, 0, 50, 180);
+  stroke(0);
+  fill(0);
+  line(width/2, 0, width/2, height);
+  line(0, height/2, width, height/2);
+  showGravityStatus();
   strokeWeight(strokeSize);
 
   // For each ball, execute a simulation step.
