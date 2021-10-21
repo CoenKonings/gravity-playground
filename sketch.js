@@ -207,8 +207,17 @@ class Ball {
 
     // Move the ball by its velocity.
     let prevPos = new Vector2D(this.pos.x, this.pos.y);
-    this.pos.x += this.velocity.x;
-    this.pos.y += this.velocity.y;
+
+    // Prevent the ball from moving too fast for solid trails to render.
+    if (leaveTrails && this.velocity.length() > strokeSize * 0.9) {
+      let tempVelocity = this.velocity.normalized().multiply(strokeSize * 0.9);
+      this.pos.x += tempVelocity.x;
+      this.pos.y += tempVelocity.y;
+    } else {
+      this.pos.x += this.velocity.x;
+      this.pos.y += this.velocity.y;
+    }
+
 
     // If gravity is turned on, accellerate the ball in the right direction.
     if (gravity) {
