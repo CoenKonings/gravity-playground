@@ -17,6 +17,8 @@ let g = 400;  // The gravitational constant
 let drag = 0.025;  // Add some drag so the gravitational accelleration is not infinite.
 let dragFactor = 0.08;  // The factor by which to multiply the drag in gravity mode 2 ("space")
 let ballDensity = 3;
+let leaveTrails = false;
+let colorSwap = false;
 
 class Vector2D {
   constructor(x, y) {
@@ -273,9 +275,11 @@ class Ball {
    * Swap the inner (fill) and outer (stroke) color of the ball.
    */
   swapColors() {
-    let temp = this.strokeColor;
-    this.strokeColor = this.fillColor;
-    this.fillColor = temp;
+    if (colorSwap) {
+      let temp = this.strokeColor;
+      this.strokeColor = this.fillColor;
+      this.fillColor = temp;
+    }
   }
 
   /**
@@ -324,14 +328,17 @@ function showGravityStatus() {
  * The main loop. Is called once every simulation step.
  */
 function draw() {
-  // Fill background, draw lines through horizontal and vertical center.
-  strokeWeight(1);
-  // background(132, 0, 50, 180);
-  stroke(0);
-  fill(0);
-  line(width/2, 0, width/2, height);
-  line(0, height/2, width, height/2);
-  showGravityStatus();
+  if (!leaveTrails) {
+    // Fill background, draw lines through horizontal and vertical center.
+    strokeWeight(1);
+    background(132, 0, 50, 180);
+    stroke(0);
+    fill(0);
+    line(width/2, 0, width/2, height);
+    line(0, height/2, width, height/2);
+    showGravityStatus();
+  }
+
   strokeWeight(strokeSize);
 
   // For each ball, execute a simulation step.
@@ -391,5 +398,9 @@ function keyPressed(event) {
     balls = [];
   } else if (event.key == "1" || event.key == "2") {
     gravityMode = event.key;
+  } else if (event.key == "t") {
+    leaveTrails = !leaveTrails;
+  } else if (event.key == "c") {
+    colorSwap = !colorSwap;
   }
 }
