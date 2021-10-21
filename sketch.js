@@ -82,6 +82,7 @@ class Ball {
     this.note = note;  // The note the ball should play when it hits something.
     /* Array used to track with which balls this ball has already collided during the current simulation step. */
     this.collided = [];
+    this.fg = new Vector2D(0, 0);
     /* Edit vX and vY so that the length of vector [vX, vY] is equal to this.speed. */
     this.resetSpeed();
     this.playSound();
@@ -161,30 +162,14 @@ class Ball {
    * For each other ball, calculate its gravitational force on this ball.
    * Use the total gravitational force to accellerate this ball.
    */
-  gravitate() {
-    // Gravitational force in both directions.
-    let fg = new Vector2D(0, 0);
+  gravitate(ball) {
+    let distanceVector = new Vector2D(this.pos.x - ball.pos.x, this.pos.y - ball.pos.y);
+    let distance = distanceVector.length();
+    let gForceStrength = g / distance ** 2;  // Total gravitational force.
+    let theta = atan2(distanceVector.y, distanceVector.x);  // Angle of horizontal line and line between balls.
 
-    for (let i = 0; i < balls.length; i++) {
-      const ball = balls[i];
-      
-      // Prevent this ball from attracting itself.
-      if (ball.id == this.id) {
-        continue;
-      }
-
-      let distanceVector = new Vector2D(this.pos.x - ball.pos.x, this.pos.y - ball.pos.y);
-      let distance = distanceVector.length();
-      let gForceStrength = g / distance ** 2;  // Total gravitational force.
-      let theta = atan2(distanceVector.y, distanceVector.x);  // Angle of horizontal line and line between balls.
-
-      fg.x -= gForceStrength * cos(theta);
-      fg.y -= gForceStrength * sin(theta);
-    }
-
-    // F = m * a
-    this.velocity.x += fg.x / this.mass;
-    this.velocity.y += fg.y / this.mass;
+    this.fg.x -= gForceStrength * cos(theta);
+    this.fg.y -= gForceStrength * sin(theta);
   }
   
   /**
@@ -193,7 +178,10 @@ class Ball {
    */
   step() {
     
-    // Iterate through all balls to check if they're colliding with this ball.
+    /**
+     * Iterate through all balls for collision detection and
+     * gravitational pull (if turned on)
+     */
     for (let i = 0; i < balls.length; i++) {
       const ball = balls[i];
       
@@ -210,13 +198,18 @@ class Ball {
         this.collided.push(ball.id);
         ball.collided.push(this.id);
       }
+
+      if (gravity && gravityMode == "2") {
+        this.gravitate(ball);
+      }
     }
+
     
     // Move the ball by its velocity.
     let prevPos = new Vector2D(this.pos.x, this.pos.y);
     this.pos.x += this.velocity.x;
     this.pos.y += this.velocity.y;
-
+    
     // If gravity is turned on, accellerate the ball in the right direction.
     if (gravity) {
       if (gravityMode == "1") {
@@ -225,14 +218,14 @@ class Ball {
           this.velocity.y += gravityStrength;
           this.velocity.y -= (this.velocity.y * drag);
         }
-
+        
         this.velocity.x -= (this.velocity.x * drag);
-      } else if (gravityMode == "2") {
-        this.gravitate();
+      } else if (gravity && gravityMode == "2") {
+        this.velocity.x += this.fg.x / this.mass;
+        this.velocity.y += this.fg.y / this.mass;
         this.velocity.y -= (this.velocity.y * drag * dragFactor);
         this.velocity.x -= (this.velocity.x * drag * dragFactor);
       }
-
     }
     
     // Change direction of movement if the ball hits the edge of the canvas.
@@ -264,6 +257,8 @@ class Ball {
       this.playSound();
     }
 
+    this.fg.x = 0;
+    this.fg.y = 0;
     this.draw();
   }
 
