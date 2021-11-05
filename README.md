@@ -12,3 +12,7 @@ Controls:
 - Backspace to remove the newest ball
 - Delete to remove all balls
 - s to turn sound on or off
+
+Planned changes:
+- Use P5's native vectors
+- Have each ball emit a drone, modulating the volume by the average distance to other balls.
