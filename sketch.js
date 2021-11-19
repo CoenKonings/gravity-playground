@@ -235,10 +235,14 @@ class Ball {
 
     avgDistanceInRange /= closeBalls;
     avgDistance /= balls.length;
+    avgDistanceInRange -= this.radius;
+    avgDistance -= this.radius;
     let maxDistance = new Vector2D(0, 0).distance(new Vector2D(width, height));
     maxDistance -= this.radius;
 
-    let filterFreq = map(this.filterRange / avgDistanceInRange, 0, this.filterRange, this.osc.getFreq(), 4000, true);
+    let maxFilterDistance = this.filterRange - this.radius;
+
+    let filterFreq = map(maxFilterDistance / avgDistanceInRange, 0, this.filterRange, this.osc.getFreq(), 10000, true);
     let amplitude = map(maxDistance / avgDistance, 0, maxDistance, 0, 1, true);
 
     amplitude = balls.length > 1 ? amplitude : 0;
