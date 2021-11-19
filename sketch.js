@@ -7,15 +7,15 @@
  */
 
 let balls = [];  // Array to store all bouncing balls.
-let notes = [0, 3, 7, 10, 12];  // Root, minor third, perfect fifth, minor third, octave.
+let notes = [0, 3, 7, 10, 12];  // Root, minor third, perfect fifth, minor seventh, octave.
 let colors = ["#02040F", "#E59500", "#002642", "#E5DADA"];  // Color scheme used for the balls.
 let gravity = false;  // Boolean used to turn gravity on or off.
-let gravityStrength = 0.5;  // Accelleration by gravity in pixels / (refresh rate) ** 2
+let gravityStrength = 0.5;  // Accelleration by planet mode gravity in pixels / (refresh rate) ** 2
 let strokeSize = 5;  // Size of the balls' border.
 let gravityMode = "1";  // Are we on earth or in space?
 let g = 400;  // The gravitational constant
 let drag = 0.025;  // Add some drag so the gravitational accelleration is not infinite.
-let dragFactor = 0.08;  // The factor by which to multiply the drag in gravity mode 2 ("space")
+let dragFactor = 0.05;  // The factor by which to multiply the drag in gravity mode 2 ("space")
 let ballDensity = 3;
 let leaveTrails = false;
 let colorSwap = false;
@@ -67,6 +67,10 @@ class Vector2D {
   multiply(n) {
     return new Vector2D(this.x * n, this.y * n);
   }
+
+  distance(v) {
+    return new Vector2D(this.x - v.x, this.y - v.y).length();
+  }
 }
 
 /**
@@ -89,6 +93,17 @@ class Ball {
     /* Edit vX and vY so that the length of vector [vX, vY] is equal to this.speed. */
     this.resetSpeed();
     this.playSound();
+    this.filter = new p5.LowPass();
+    this.osc = new p5.Oscillator();
+    this.osc.setType('saw');
+    this.osc.freq(midiToFreq(this.note));
+    this.osc.disconnect();
+    this.osc.connect(this.filter);
+    this.osc.amp(0);
+    console.log("DEBUG -- ", this.note, midiToFreq(this.note));
+    this.filter.freq(midiToFreq(this.note));
+    this.osc.start();
+    this.filterRange = this.radius * 8;
   }
 
   /**
@@ -146,10 +161,10 @@ class Ball {
     let dist = distanceVector.length();
     let overlap = this.radius + ball.radius - dist;
 
-    this.pos.x += overlap / 1.99 * Math.cos(theta);
-    this.pos.y += overlap / 1.99 * Math.sin(theta);
-    ball.pos.x -= overlap / 1.99 * Math.cos(theta);
-    ball.pos.y -= overlap / 1.99 * Math.sin(theta);
+    this.pos.x += overlap / 2 * Math.cos(theta);
+    this.pos.y += overlap / 2 * Math.sin(theta);
+    ball.pos.x -= overlap / 2 * Math.cos(theta);
+    ball.pos.y -= overlap / 2 * Math.sin(theta);
   }
 
   /**
@@ -180,9 +195,13 @@ class Ball {
    */
   step() {
     /**
-     * Iterate through all balls for collision detection and
-     * gravitational pull (if turned on)
+     * Iterate through all balls for collision detection,
+     * gravitational pull (if turned on) and average distance.
      */
+    let avgDistance = 0;
+    let avgDistanceInRange = 0;
+    let closeBalls = 0;
+
     for (let i = 0; i < balls.length; i++) {
       const ball = balls[i];
 
@@ -190,6 +209,15 @@ class Ball {
       if (ball.id == this.id) {
         continue;
       }
+
+      const distance = this.pos.distance(ball.pos);
+
+      if (distance < this.filterRange) {
+        avgDistanceInRange += distance;
+        closeBalls++;
+      }
+
+      avgDistance += distance;
 
       // Detect collision
       if (this.collision(ball) && !this.collided.includes(ball.id)) {
@@ -204,6 +232,20 @@ class Ball {
         this.gravitate(ball);
       }
     }
+
+    avgDistanceInRange /= closeBalls;
+    avgDistance /= balls.length;
+    let maxDistance = new Vector2D(0, 0).distance(new Vector2D(width, height));
+    maxDistance -= this.radius;
+
+    let filterFreq = map(this.filterRange / avgDistanceInRange, 0, this.filterRange, this.osc.getFreq(), 4000, true);
+    let amplitude = map(maxDistance / avgDistance, 0, maxDistance, 0, 1, true);
+
+    amplitude = balls.length > 1 ? amplitude : 0;
+    filterFreq = closeBalls > 0 ? filterFreq : this.osc.getFreq();
+
+    this.osc.amp(amplitude);
+    this.filter.freq(filterFreq);
 
     // Move the ball by its velocity.
     let prevPos = new Vector2D(this.pos.x, this.pos.y);
@@ -374,7 +416,7 @@ function mouseClicked() {
   let radius = Math.floor(Math.random() * 20) + 10;
   // Smaller balls play higher notes.
   let note = Math.floor((radius - 30) * -1 / 20 * notes.length);
-  note = notes[note] + 50;
+  note = notes[note] + 60;
   let id = balls.length;
   let strokeColor = "";
   let fillColor = "";
