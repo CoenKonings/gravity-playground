@@ -95,15 +95,15 @@ class Ball {
     this.playSound();
     this.filter = new p5.LowPass();
     this.osc = new p5.Oscillator();
-    this.osc.setType('saw');
+    this.osc.setType('sawtooth');
     this.osc.freq(midiToFreq(this.note));
     this.osc.disconnect();
     this.osc.connect(this.filter);
     this.osc.amp(0);
     console.log("DEBUG -- ", this.note, midiToFreq(this.note));
-    this.filter.freq(midiToFreq(this.note));
+    this.filter.freq(this.osc.getFreq() * 2);
     this.osc.start();
-    this.filterRange = this.radius * 8;
+    this.filterRange = this.radius * 10;
   }
 
   /**
@@ -198,9 +198,12 @@ class Ball {
      * Iterate through all balls for collision detection,
      * gravitational pull (if turned on) and average distance.
      */
+    let maxDistance = new Vector2D(0, 0).distance(new Vector2D(width, height));
+    maxDistance -= this.radius;
     let avgDistance = 0;
     let avgDistanceInRange = 0;
     let closeBalls = 0;
+    let closest = this.filterRange;
 
     for (let i = 0; i < balls.length; i++) {
       const ball = balls[i];
@@ -210,12 +213,14 @@ class Ball {
         continue;
       }
 
-      const distance = this.pos.distance(ball.pos);
+      const distance = this.pos.distance(ball.pos) - ball.radius;
 
       if (distance < this.filterRange) {
         avgDistanceInRange += distance;
         closeBalls++;
       }
+
+      closest = distance < closest - ball.radius ? distance : closest - ball.radius;
 
       avgDistance += distance;
 
@@ -237,18 +242,19 @@ class Ball {
     avgDistance /= balls.length;
     avgDistanceInRange -= this.radius;
     avgDistance -= this.radius;
-    let maxDistance = new Vector2D(0, 0).distance(new Vector2D(width, height));
-    maxDistance -= this.radius;
+    closest -= this.radius;
 
-    let maxFilterDistance = this.filterRange - this.radius;
+    let maxFilterDistance = this.filterRange;
 
-    let filterFreq = map(maxFilterDistance / avgDistanceInRange, 0, this.filterRange, this.osc.getFreq(), 10000, true);
-    let amplitude = map(maxDistance / avgDistance, 0, maxDistance, 0, 1, true);
+    let filterFreq = map(1 - closest / maxFilterDistance, 0, 1, this.osc.getFreq() * 2, 1000 + this.osc.getFreq() * 2);
+    let amplitude = map(maxDistance / avgDistance, 0, maxDistance, 0.2, 1, true);
+    let panning = map(this.pos.x, 0 + this.radius, width - this.radius, -0.7, 0.7);
 
     amplitude = balls.length > 1 ? amplitude : 0;
     filterFreq = closeBalls > 0 ? filterFreq : this.osc.getFreq();
 
-    this.osc.amp(amplitude);
+    this.osc.amp(amplitude, 1 / 60);
+    this.osc.pan(panning);
     this.filter.freq(filterFreq);
 
     // Move the ball by its velocity.
@@ -420,7 +426,8 @@ function mouseClicked() {
   let radius = Math.floor(Math.random() * 20) + 10;
   // Smaller balls play higher notes.
   let note = Math.floor((radius - 30) * -1 / 20 * notes.length);
-  note = notes[note] + 60;
+  console.log("DEBUG -- ", note);
+  note = notes[note] + 50;
   let id = balls.length;
   let strokeColor = "";
   let fillColor = "";
